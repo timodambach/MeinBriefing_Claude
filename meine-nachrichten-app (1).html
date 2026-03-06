@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0f">
+<title>MeinBriefing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --border: rgba(255,255,255,0.07);
+    --accent: #e8c468;
+    --accent2: #7b9cff;
+    --text: #f0efe8;
+    --muted: #8a8a9a;
+    --politik: #ff7b54;
+    --tech: #7b9cff;
+    --sport: #54d68a;
+    --wirtschaft: #e8c468;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,15,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px 0;
+  }
+  .topbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+  .date-badge {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-weight: 300;
+    letter-spacing: 0.5px;
+  }
+  .refresh-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 50%;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+  }
+  .refresh-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .refresh-btn.spinning { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 1px;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border-radius: 8px 8px 0 0;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+    position: relative;
+  }
+  .tab.active {
+    color: var(--text);
+    background: var(--surface);
+  }
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 20px; height: 2px;
+    background: var(--accent);
+    border-radius: 2px 2px 0 0;
+  }
+  .tab-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  /* MAIN */
+  main { padding: 20px 16px 100px; }
+
+  /* LOADING STATE */
+  .loading-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    gap: 20px;
+  }
+  .loading-orb {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    animation: spin 1s linear infinite;
+  }
+  .loading-text {
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .loading-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 280px;
+  }
+  .loading-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    opacity: 0;
+    animation: fadeIn 0.4s forwards;
+  }
+  .loading-step.done { color: var(--sport); }
+  .step-icon { font-size: 1rem; width: 20px; text-align: center; }
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  /* NEWS CARDS */
+  .section-label {
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 24px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .hero-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .hero-card.politik::before { background: var(--politik); }
+  .hero-card.tech::before { background: var(--tech); }
+  .hero-card.sport::before { background: var(--sport); }
+  .hero-card.wirtschaft::before { background: var(--wirtschaft); }
+  .hero-card:active { transform: scale(0.98); }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .category-pill {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .politik .category-pill { background: rgba(255,123,84,0.15); color: var(--politik); }
+  .tech .category-pill { background: rgba(123,156,255,0.15); color: var(--tech); }
+  .sport .category-pill { background: rgba(84,214,138,0.15); color: var(--sport); }
+  .wirtschaft .category-pill { background: rgba(232,196,104,0.15); color: var(--wirtschaft); }
+
+  .source-badge {
+    font-size: 0.7rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .source-flag { font-size: 0.8rem; }
+  .card-time { font-size: 0.68rem; color: var(--muted); margin-left: auto; }
+
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+  .card-summary {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .read-more {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--accent);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .translated-badge {
+    font-size: 0.65rem;
+    color: var(--accent2);
+    background: rgba(123,156,255,0.1);
+    padding: 2px 7px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* COMPACT CARD */
+  .compact-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .compact-card:active { transform: scale(0.98); }
+  .compact-accent {
+    width: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    align-self: stretch;
+  }
+  .politik .compact-accent { background: var(--politik); }
+  .tech .compact-accent { background: var(--tech); }
+  .sport .compact-accent { background: var(--sport); }
+  .wirtschaft .compact-accent { background: var(--wirtschaft); }
+  .compact-content { flex: 1; }
+  .compact-title {
+    font-size: 0.88rem;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+  .compact-meta {
+    font-size: 0.7rem;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
+  }
+
+  /* ERROR STATE */
+  .error-card {
+    background: rgba(255,80,80,0.08);
+    border: 1px solid rgba(255,80,80,0.2);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  .error-card strong { color: #ff7070; display: block; margin-bottom: 8px; font-size: 1rem; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(10,10,15,0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 10px 0 20px;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 6px;
+    color: var(--muted);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    transition: color 0.2s;
+    border: none;
+    background: none;
+  }
+  .nav-item.active { color: var(--accent); }
+  .nav-icon { font-size: 1.3rem; }
+
+  /* SETTINGS PANEL */
+  .panel {
+    display: none;
+  }
+  .panel.active { display: block; }
+
+  .settings-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .settings-header {
+    padding: 14px 18px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-row {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-label {
+    font-size: 0.88rem;
+    font-weight: 400;
+  }
+  .settings-sub {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .toggle {
+    width: 44px; height: 24px;
+    background: var(--surface2);
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--accent); border-color: var(--accent); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: left 0.2s;
+  }
+  .toggle.on::after { left: 23px; }
+
+  .info-box {
+    background: rgba(123,156,255,0.07);
+    border: 1px solid rgba(123,156,255,0.2);
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.65;
+    margin-bottom: 16px;
+  }
+  .info-box strong { color: var(--accent2); }
+
+  /* ARTICLE DETAIL */
+  .article-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 200;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+  .article-overlay.open { transform: translateY(0); }
+  .article-topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,15,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .back-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 50%;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .article-content { padding: 24px 20px 80px; }
+  .article-category {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .artikel-titel {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1.25;
+    margin-bottom: 16px;
+  }
+  .article-byline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--muted);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .article-body {
+    font-size: 0.92rem;
+    line-height: 1.8;
+    color: #c8c7c0;
+  }
+  .article-body p { margin-bottom: 16px; }
+  .original-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 24px;
+    padding: 12px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .original-link:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+  .empty-text { font-size: 0.88rem; line-height: 1.7; }
+
+  /* API KEY NOTICE */
+  .apikey-notice {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .apikey-notice h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+  }
+  .apikey-notice p {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.65;
+    margin-bottom: 16px;
+  }
+  .apikey-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .apikey-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 0.82rem;
+    font-family: monospace;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .apikey-input:focus { border-color: var(--accent); }
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0a0f;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .apikey-hint { font-size: 0.7rem; color: var(--muted); }
+  .apikey-hint a { color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-row">
+    <div class="logo">Mein<span>Briefing</span></div>
+    <button class="refresh-btn" id="refreshBtn" onclick="loadNews()">↻</button>
+  </div>
+  <div class="tabs" id="tabs">
+    <button class="tab active" onclick="switchTab('alle', this)">
+      <span class="tab-dot" style="background:#ffffff33"></span>Alle
+    </button>
+    <button class="tab" onclick="switchTab('politik', this)">
+      <span class="tab-dot" style="background:var(--politik)"></span>Politik
+    </button>
+    <button class="tab" onclick="switchTab('wirtschaft', this)">
+      <span class="tab-dot" style="background:var(--wirtschaft)"></span>Wirtschaft
+    </button>
+    <button class="tab" onclick="switchTab('tech', this)">
+      <span class="tab-dot" style="background:var(--tech)"></span>Tech
+    </button>
+    <button class="tab" onclick="switchTab('sport', this)">
+      <span class="tab-dot" style="background:var(--sport)"></span>Sport
+    </button>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<main>
+  <!-- News Panel -->
+  <div id="panel-news" class="panel active">
+    <div id="newsContainer">
+      <!-- Content injected by JS -->
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div id="panel-settings" class="panel">
+    <div class="section-label" style="margin-top:4px">Konfiguration</div>
+
+    <div class="apikey-notice" id="apiKeySection">
+      <h3>🔑 API-Schlüssel</h3>
+      <p>Damit die App Nachrichten laden, zusammenfassen und übersetzen kann, benötigst du einen kostenlosen Anthropic API-Schlüssel.</p>
+      <div class="apikey-input-row">
+        <input type="password" class="apikey-input" id="apiKeyInput" placeholder="sk-ant-...">
+        <button class="btn-primary" onclick="saveApiKey()">Speichern</button>
+      </div>
+      <div class="apikey-hint">Schlüssel bekommst du auf <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> (kostenloser Test verfügbar)</div>
+    </div>
+
+    <div class="info-box">
+      <strong>ℹ️ Wie funktioniert die App?</strong><br><br>
+      Die App nutzt Claude AI um aktuelle Nachrichten aus verschiedenen Quellen zu laden, auf Deutsch zusammenzufassen und dir übersichtlich anzuzeigen. Alle Texte werden direkt auf deinem Gerät verarbeitet.
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-header">Quellen</div>
+      <div class="settings-row">
+        <div><div class="settings-label">🇩🇪 Tagesschau</div><div class="settings-sub">tagesschau.de</div></div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">🇩🇪 NTV</div><div class="settings-sub">ntv.de</div></div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">🇩🇪 Spiegel Online</div><div class="settings-sub">spiegel.de</div></div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">🇬🇧 BBC News</div><div class="settings-sub">Übersetzt ins Deutsche</div></div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">🌐 Reuters</div><div class="settings-sub">Übersetzt ins Deutsche</div></div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">💻 The Verge</div><div class="settings-sub">Tech – Übersetzt ins Deutsche</div></div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-header">Themen</div>
+      <div class="settings-row">
+        <div class="settings-label">🏛 Politik & International</div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">📈 Wirtschaft</div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">💻 Technologie & Wissenschaft</div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">⚽ Sport</div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-header">Darstellung</div>
+      <div class="settings-row">
+        <div><div class="settings-label">Kompakte Ansicht</div><div class="settings-sub">Weniger Text, mehr Artikel</div></div>
+        <div class="toggle" id="compactToggle" onclick="toggleCompact(this)"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-item active" id="nav-news" onclick="switchNav('news')">
+    <span class="nav-icon">📰</span>
+    Nachrichten
+  </button>
+  <button class="nav-item" id="nav-settings" onclick="switchNav('settings')">
+    <span class="nav-icon">⚙️</span>
+    Einstellungen
+  </button>
+</div>
+
+<!-- ARTICLE OVERLAY -->
+<div class="article-overlay" id="articleOverlay">
+  <div class="article-topbar">
+    <button class="back-btn" onclick="closeArticle()">←</button>
+    <span id="overlaySource" style="font-size:0.8rem; color:var(--muted)"></span>
+  </div>
+  <div class="article-content">
+    <div class="article-category" id="overlayCategory"></div>
+    <div class="artikel-titel" id="overlayTitle"></div>
+    <div class="article-byline" id="overlayByline"></div>
+    <div class="article-body" id="overlayBody"></div>
+    <a href="#" id="overlayLink" class="original-link" target="_blank">🔗 Originalartikel öffnen</a>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let currentTab = 'alle';
+let allArticles = [];
+let compact = false;
+let apiKey = localStorage.getItem('meinbriefing_apikey') || '';
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('load', () => {
+  updateDate();
+  if (apiKey) {
+    loadNews();
+  } else {
+    showNoApiKey();
+  }
+});
+
+function updateDate() {
+  const now = new Date();
+  const opts = { weekday:'long', day:'numeric', month:'long' };
+  document.querySelector('.date-badge') && 0;
+  // date shown in topbar
+  const d = document.createElement('div');
+  d.className = 'date-badge';
+  d.textContent = now.toLocaleDateString('de-DE', opts);
+  document.querySelector('.topbar-row').appendChild(d);
+}
+
+// ============================================================
+// API KEY
+// ============================================================
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val.startsWith('sk-')) {
+    alert('Bitte einen gültigen Anthropic API-Schlüssel eingeben (beginnt mit sk-ant-)');
+    return;
+  }
+  apiKey = val;
+  localStorage.setItem('meinbriefing_apikey', val);
+  document.getElementById('apiKeyInput').value = '';
+  alert('✅ API-Schlüssel gespeichert! Du kannst jetzt Nachrichten laden.');
+  switchNav('news');
+  loadNews();
+}
+
+function showNoApiKey() {
+  document.getElementById('newsContainer').innerHTML = `
+    <div class="apikey-notice" style="margin-top:20px">
+      <h3>👋 Willkommen bei MeinBriefing</h3>
+      <p>Um Nachrichten zu laden, gehe zuerst zu <strong>Einstellungen</strong> und trage deinen Anthropic API-Schlüssel ein.</p>
+      <button class="btn-primary" onclick="switchNav('settings')" style="width:100%">→ Zu den Einstellungen</button>
+    </div>
+  `;
+}
+
+// ============================================================
+// LOAD NEWS
+// ============================================================
+async function loadNews() {
+  if (!apiKey) { showNoApiKey(); return; }
+
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+
+  document.getElementById('newsContainer').innerHTML = `
+    <div class="loading-screen">
+      <div class="loading-orb"></div>
+      <div class="loading-text">Nachrichten werden geladen<br>und zusammengefasst…</div>
+      <div class="loading-steps" id="loadingSteps">
+        <div class="loading-step" style="animation-delay:0.3s">
+          <span class="step-icon">🌐</span> Quellen werden abgerufen…
+        </div>
+        <div class="loading-step" style="animation-delay:0.9s">
+          <span class="step-icon">🤖</span> KI analysiert & übersetzt…
+        </div>
+        <div class="loading-step" style="animation-delay:1.5s">
+          <span class="step-icon">📋</span> Zusammenfassungen werden erstellt…
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const news = await fetchNewsFromClaude();
+    allArticles = news;
+    renderNews(currentTab);
+  } catch(e) {
+    document.getElementById('newsContainer').innerHTML = `
+      <div class="error-card" style="margin-top:20px">
+        <strong>⚠️ Fehler beim Laden</strong>
+        ${e.message || 'Unbekannter Fehler. Bitte überprüfe deinen API-Schlüssel in den Einstellungen.'}
+        <br><br>
+        <button class="btn-primary" onclick="loadNews()">Erneut versuchen</button>
+      </div>
+    `;
+  } finally {
+    btn.classList.remove('spinning');
+  }
+}
+
+async function fetchNewsFromClaude() {
+  const batch1 = await fetchBatch([
+    {id:1, category:'politik', source:'Tagesschau', flag:'🇩🇪', url:'https://tagesschau.de', translated:false},
+    {id:2, category:'politik', source:'Spiegel',    flag:'🇩🇪', url:'https://spiegel.de',    translated:false},
+    {id:3, category:'politik', source:'BBC News',   flag:'🇬🇧', url:'https://bbc.com/news',  translated:true},
+    {id:4, category:'politik', source:'Reuters',    flag:'🌍', url:'https://reuters.com', translated:true},
+  ], 'politik');
+  const batch2 = await fetchBatch([
+    {id:5, category:'wirtschaft', source:'NTV',     flag:'🇩🇪', url:'https://ntv.de',         translated:false},
+    {id:6, category:'wirtschaft', source:'Reuters', flag:'🌍', url:'https://reuters.com', translated:true},
+    {id:7, category:'tech', source:'The Verge',     flag:'🇺🇸', url:'https://theverge.com',   translated:true},
+    {id:8, category:'tech', source:'Spiegel',       flag:'🇩🇪', url:'https://spiegel.de',     translated:false},
+  ], 'wirtschaft_tech');
+  const batch3 = await fetchBatch([
+    {id:9,  category:'sport', source:'Kicker', flag:'🇩🇪', url:'https://kicker.de', translated:false},
+    {id:10, category:'sport', source:'Kicker', flag:'🇩🇪', url:'https://kicker.de', translated:false},
+  ], 'sport');
+  return [...batch1, ...batch2, ...batch3];
+}
+
+async function fetchBatch(articles, bereich) {
+  const today = new Date().toLocaleDateString('de-DE', {day:'numeric', month:'long', year:'numeric'});
+  const template = articles.map(a =>
+    `{"id":${a.id},"category":"${a.category}","source":"${a.source}","sourceFlag":"${a.flag}","sourceUrl":"${a.url}","isTranslated":${a.translated},"title":"TITEL","summary":"ZUSAMMENFASSUNG","body":"TEXT","time":"vor ${a.id} Std."}`
+  ).join(',\n');
+
+  const politikHinweis = bereich === 'politik'
+    ? 'WICHTIG fuer Politik: Bei den internationalen Quellen (BBC, Reuters) bevorzuge Artikel, die sich auf Deutschland beziehen oder Deutschland direkt betreffen. Nur wenn keine Deutschland-relevanten Themen vorhanden sind, andere internationale Themen waehlen.'
+    : '';
+
+  const prompt = `Heute ist ${today}. Fuell dieses JSON mit aktuellen Nachrichteninhalten auf Deutsch. Ersetze TITEL (max 60 Zeichen), ZUSAMMENFASSUNG (1 Satz), TEXT (2 kurze Saetze). ${politikHinweis} Nur JSON, keine Backticks:\n[${template}]`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 900,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API Fehler ${response.status}`);
+  }
+
+  const data = await response.json();
+  const text = data.content[0].text.trim();
+  const clean = text.replace(/```json|```/g, '').trim();
+  const start = clean.indexOf('[');
+  const end = clean.lastIndexOf(']');
+  if (start === -1 || end === -1) throw new Error('Antwort konnte nicht gelesen werden. Bitte erneut versuchen.');
+  return JSON.parse(clean.slice(start, end + 1));
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderNews(tab) {
+  const container = document.getElementById('newsContainer');
+  const filtered = tab === 'alle' ? allArticles : allArticles.filter(a => a.category === tab);
+
+  if (!filtered.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">Keine Artikel in dieser Kategorie gefunden.<br>Lade die Nachrichten neu.</div>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+
+  if (tab === 'alle') {
+    // Hero cards for top 3, compact for rest
+    const top = filtered.slice(0, 3);
+    const rest = filtered.slice(3);
+
+    html += `<div class="section-label">Top-Meldungen</div>`;
+    top.forEach(a => { html += heroCard(a); });
+
+    if (rest.length) {
+      html += `<div class="section-label">Weitere Nachrichten</div>`;
+      rest.forEach(a => { html += compact ? compactCard(a) : heroCard(a); });
+    }
+  } else {
+    html += `<div class="section-label">${catLabel(tab)}</div>`;
+    filtered.forEach(a => { html += compact ? compactCard(a) : heroCard(a); });
+  }
+
+  container.innerHTML = html;
+}
+
+function catLabel(cat) {
+  return {politik:'Politik & International', wirtschaft:'Wirtschaft', tech:'Technologie & Wissenschaft', sport:'Sport'}[cat] || cat;
+}
+
+function heroCard(a) {
+  return `
+  <div class="hero-card ${a.category}" onclick="openArticle(${a.id})">
+    <div class="card-meta">
+      <span class="category-pill">${catLabel(a.category)}</span>
+      <span class="source-badge">${a.sourceFlag} ${a.source}</span>
+      <span class="card-time">${a.time}</span>
+    </div>
+    <div class="card-title">${a.title}</div>
+    <div class="card-summary">${a.summary}</div>
+    <div class="card-footer">
+      <span class="read-more">Mehr lesen →</span>
+      ${a.isTranslated ? '<span class="translated-badge">🌐 Übersetzt</span>' : ''}
+    </div>
+  </div>`;
+}
+
+function compactCard(a) {
+  return `
+  <div class="compact-card ${a.category}" onclick="openArticle(${a.id})">
+    <div class="compact-accent"></div>
+    <div class="compact-content">
+      <div class="compact-title">${a.title}</div>
+      <div class="compact-meta">
+        <span>${a.sourceFlag} ${a.source}</span>
+        <span>${a.time}</span>
+        ${a.isTranslated ? '<span>🌐</span>' : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// ARTICLE DETAIL
+// ============================================================
+function openArticle(id) {
+  const a = allArticles.find(x => x.id === id);
+  if (!a) return;
+
+  document.getElementById('overlaySource').textContent = `${a.sourceFlag} ${a.source}`;
+  document.getElementById('overlayCategory').textContent = catLabel(a.category);
+  document.getElementById('overlayCategory').style.color = `var(--${a.category})`;
+  document.getElementById('overlayTitle').textContent = a.title;
+  document.getElementById('overlayByline').innerHTML = `
+    <span>${a.time}</span>
+    ${a.isTranslated ? '<span class="translated-badge">🌐 Aus dem Englischen übersetzt</span>' : ''}
+  `;
+  document.getElementById('overlayBody').innerHTML = `<p>${a.body}</p><p>${a.summary}</p>`;
+  document.getElementById('overlayLink').href = a.sourceUrl;
+
+  document.getElementById('articleOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeArticle() {
+  document.getElementById('articleOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (allArticles.length) renderNews(tab);
+}
+
+function switchNav(section) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`panel-${section}`).classList.add('active');
+  document.getElementById(`nav-${section}`).classList.add('active');
+}
+
+function toggleCompact(el) {
+  el.classList.toggle('on');
+  compact = el.classList.contains('on');
+  if (allArticles.length) renderNews(currentTab);
+}
+</script>
+</body>
+</html>
