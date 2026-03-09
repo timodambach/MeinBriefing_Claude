@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d0d14">
+<title>MeinBriefing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0d0d14;
+  --surface:  #16161f;
+  --surface2: #1e1e2a;
+  --border:   rgba(255,255,255,0.07);
+  --accent:   #e8c468;
+  --blue:     #7b9cff;
+  --text:     #eeede6;
+  --muted:    #7a7a8a;
+  --politik:  #ff7b54;
+  --wirtschaft: #54c98a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+/* ── TOPBAR ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(13,13,20,0.93);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 18px 0;
+}
+.topbar-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.logo { font-family: 'Playfair Display', serif; font-size: 1.45rem; font-weight: 900; }
+.logo span { color: var(--accent); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.date-label { font-size: 0.7rem; color: var(--muted); }
+.refresh-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--muted); border-radius: 50%; width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 1rem; transition: all 0.2s;
+}
+.refresh-btn:hover { color: var(--accent); border-color: var(--accent); }
+.refresh-btn.spinning { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── TABS ── */
+.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-bottom: 1px; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0; padding: 8px 18px;
+  border-radius: 8px 8px 0 0;
+  font-size: 0.8rem; font-weight: 500;
+  cursor: pointer; border: none;
+  background: transparent; color: var(--muted);
+  transition: all 0.2s; position: relative;
+}
+.tab.active { color: var(--text); background: var(--surface); }
+.tab.active::after {
+  content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 22px; height: 2px; background: var(--accent); border-radius: 2px 2px 0 0;
+}
+.dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+
+/* ── MAIN ── */
+main { padding: 18px 15px 90px; }
+
+/* ── LOADING ── */
+.loading-wrap { display: flex; flex-direction: column; align-items: center; padding: 70px 20px; gap: 18px; }
+.spinner { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--accent); animation: spin 0.9s linear infinite; }
+.loading-label { color: var(--muted); font-size: 0.85rem; text-align: center; line-height: 1.6; }
+.loading-steps { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 260px; margin-top: 4px; }
+.lstep { font-size: 0.76rem; color: var(--muted); opacity: 0; animation: fadeUp 0.4s forwards; display: flex; align-items: center; gap: 8px; }
+@keyframes fadeUp { to { opacity: 1; } }
+
+/* ── CARDS ── */
+.section-label {
+  font-size: 0.66rem; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted);
+  margin: 22px 0 10px; display: flex; align-items: center; gap: 8px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 18px; margin-bottom: 10px;
+  cursor: pointer; transition: transform 0.2s, border-color 0.2s;
+  position: relative; overflow: hidden;
+}
+.card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.card.politik::before   { background: var(--politik); }
+.card.wirtschaft::before { background: var(--wirtschaft); }
+.card:active { transform: scale(0.98); }
+
+.card-meta { display: flex; align-items: center; gap: 7px; margin-bottom: 9px; flex-wrap: wrap; }
+.cat-pill {
+  font-size: 0.63rem; font-weight: 700; letter-spacing: 0.7px;
+  text-transform: uppercase; padding: 3px 7px; border-radius: 4px;
+}
+.politik .cat-pill   { background: rgba(255,123,84,0.15); color: var(--politik); }
+.wirtschaft .cat-pill { background: rgba(84,201,138,0.15); color: var(--wirtschaft); }
+.source-info { font-size: 0.7rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.card-time { font-size: 0.67rem; color: var(--muted); margin-left: auto; }
+.card-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700; line-height: 1.35; margin-bottom: 8px; }
+.card-summary { font-size: 0.81rem; color: var(--muted); line-height: 1.6; }
+.card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--border); }
+.read-more { font-size: 0.74rem; font-weight: 500; color: var(--accent); }
+.translated-pill { font-size: 0.63rem; color: var(--blue); background: rgba(123,156,255,0.1); padding: 2px 7px; border-radius: 4px; }
+
+/* ── ARTICLE OVERLAY ── */
+.overlay {
+  position: fixed; inset: 0; background: var(--bg); z-index: 200;
+  overflow-y: auto; transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
+}
+.overlay.open { transform: translateY(0); }
+.overlay-bar {
+  position: sticky; top: 0; background: rgba(13,13,20,0.93);
+  backdrop-filter: blur(18px); border-bottom: 1px solid var(--border);
+  padding: 14px 18px; display: flex; align-items: center; gap: 12px;
+}
+.back-btn {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); border-radius: 50%; width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.overlay-source { font-size: 0.78rem; color: var(--muted); }
+.overlay-body { padding: 22px 18px 80px; }
+.overlay-cat { font-size: 0.66rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
+.overlay-title { font-family: 'Playfair Display', serif; font-size: 1.45rem; font-weight: 900; line-height: 1.25; margin-bottom: 14px; }
+.overlay-meta { display: flex; gap: 10px; flex-wrap: wrap; font-size: 0.76rem; color: var(--muted); margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+.overlay-text { font-size: 0.9rem; line-height: 1.8; color: #c5c4bd; }
+.overlay-text p { margin-bottom: 14px; }
+.source-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 22px; padding: 11px 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; font-size: 0.78rem; color: var(--muted);
+  text-decoration: none; transition: border-color 0.2s;
+}
+.source-link:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── SETTINGS ── */
+.settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 14px; }
+.settings-head { padding: 12px 16px; font-size: 0.66rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+.settings-row { padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.settings-row:last-child { border-bottom: none; }
+.settings-lbl { font-size: 0.86rem; }
+.settings-sub { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+.info-box { background: rgba(123,156,255,0.07); border: 1px solid rgba(123,156,255,0.18); border-radius: 12px; padding: 15px; font-size: 0.79rem; color: var(--muted); line-height: 1.65; margin-bottom: 14px; }
+.info-box strong { color: var(--blue); }
+
+/* ── API KEY ── */
+.apikey-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 16px; text-align: center; }
+.apikey-card h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 10px; }
+.apikey-card p { font-size: 0.81rem; color: var(--muted); line-height: 1.65; margin-bottom: 14px; }
+.input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.key-input {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 9px; padding: 10px 12px; color: var(--text);
+  font-size: 0.8rem; font-family: monospace; outline: none;
+  transition: border-color 0.2s;
+}
+.key-input:focus { border-color: var(--accent); }
+.btn { background: var(--accent); color: #0d0d14; border: none; border-radius: 9px; padding: 10px 15px; font-size: 0.8rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn:hover { opacity: 0.85; }
+.key-hint { font-size: 0.69rem; color: var(--muted); }
+.key-hint a { color: var(--blue); }
+
+/* ── ERROR ── */
+.error-card { background: rgba(255,80,80,0.08); border: 1px solid rgba(255,80,80,0.2); border-radius: 12px; padding: 20px; text-align: center; font-size: 0.83rem; color: var(--muted); line-height: 1.65; }
+.error-card strong { color: #ff7070; display: block; margin-bottom: 8px; font-size: 0.95rem; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(13,13,20,0.96); backdrop-filter: blur(18px);
+  border-top: 1px solid var(--border);
+  display: flex; padding: 9px 0 20px;
+}
+.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 5px; color: var(--muted); font-size: 0.61rem; font-weight: 500; letter-spacing: 0.2px; transition: color 0.2s; border: none; background: none; }
+.nav-btn.active { color: var(--accent); }
+.nav-icon { font-size: 1.25rem; }
+
+/* ── PANELS ── */
+.panel { display: none; }
+.panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <div class="logo">Mein<span>Briefing</span></div>
+    <div class="topbar-right">
+      <span class="date-label" id="dateLabel"></span>
+      <button class="refresh-btn" id="refreshBtn" onclick="loadNews()">↻</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('alle',this)"><span class="dot" style="background:#ffffff22"></span>Alle</button>
+    <button class="tab" onclick="switchTab('politik',this)"><span class="dot" style="background:var(--politik)"></span>Politik</button>
+    <button class="tab" onclick="switchTab('wirtschaft',this)"><span class="dot" style="background:var(--wirtschaft)"></span>Wirtschaft</button>
+  </div>
+</div>
+
+<main>
+  <div id="panel-news" class="panel active">
+    <div id="newsContainer"></div>
+  </div>
+
+  <div id="panel-settings" class="panel">
+    <div class="section-label" style="margin-top:4px">API-Schlüssel</div>
+    <div class="apikey-card">
+      <h3>🔑 Anthropic API-Schlüssel</h3>
+      <p>Trage hier deinen Schlüssel ein. Er wird lokal auf deinem Gerät gespeichert.</p>
+      <div class="input-row">
+        <input type="password" class="key-input" id="apiKeyInput" placeholder="sk-ant-...">
+        <button class="btn" onclick="saveApiKey()">Speichern</button>
+      </div>
+      <div class="key-hint">Schlüssel unter <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> erstellen</div>
+    </div>
+
+    <div class="section-label">Quellen</div>
+    <div class="info-box">
+      <strong>ℹ️ Aktuelle Quellen</strong><br><br>
+      Die App ruft folgende internationalen RSS-Feeds ab und übersetzt die Artikel automatisch ins Deutsche:<br><br>
+      🇬🇧 <strong>BBC Europe</strong> — feeds.bbci.co.uk<br>
+      🇬🇧 <strong>The Guardian Europe</strong> — theguardian.com<br>
+      🇬🇧 <strong>Sky News Politics</strong> — skynews.com
+    </div>
+
+    <div class="section-label">Themen</div>
+    <div class="settings-section">
+      <div class="settings-row">
+        <div><div class="settings-lbl">🏛 Politik & International</div><div class="settings-sub">BBC, Guardian, Sky News</div></div>
+        <span style="color:var(--wirtschaft);font-size:0.75rem">✓ Aktiv</span>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-lbl">📈 Wirtschaft</div><div class="settings-sub">BBC, Guardian</div></div>
+        <span style="color:var(--wirtschaft);font-size:0.75rem">✓ Aktiv</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" id="nav-news" onclick="switchNav('news')">
+    <span class="nav-icon">📰</span>Nachrichten
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="switchNav('settings')">
+    <span class="nav-icon">⚙️</span>Einstellungen
+  </button>
+</div>
+
+<!-- ARTICLE OVERLAY -->
+<div class="overlay" id="articleOverlay">
+  <div class="overlay-bar">
+    <button class="back-btn" onclick="closeArticle()">←</button>
+    <span class="overlay-source" id="oSource"></span>
+  </div>
+  <div class="overlay-body">
+    <div class="overlay-cat" id="oCat"></div>
+    <div class="overlay-title" id="oTitle"></div>
+    <div class="overlay-meta" id="oMeta"></div>
+    <div class="overlay-text" id="oBody"></div>
+    <a href="#" id="oLink" class="source-link" target="_blank">🔗 Originalartikel öffnen</a>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+let apiKey = localStorage.getItem('mb_apikey') || '';
+let allArticles = [];
+let currentTab = 'alle';
+
+// ─────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────
+window.addEventListener('load', () => {
+  const now = new Date();
+  document.getElementById('dateLabel').textContent =
+    now.toLocaleDateString('de-DE', { weekday:'short', day:'numeric', month:'short' });
+
+  if (apiKey) {
+    loadNews();
+  } else {
+    showNoKey();
+  }
+});
+
+// ─────────────────────────────────────────
+// API KEY
+// ─────────────────────────────────────────
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val.startsWith('sk-')) {
+    alert('Bitte einen gültigen Schlüssel eingeben (beginnt mit sk-)');
+    return;
+  }
+  apiKey = val;
+  localStorage.setItem('mb_apikey', val);
+  document.getElementById('apiKeyInput').value = '';
+  switchNav('news');
+  loadNews();
+}
+
+function showNoKey() {
+  document.getElementById('newsContainer').innerHTML = `
+    <div class="apikey-card" style="margin-top:16px">
+      <h3>👋 Willkommen</h3>
+      <p>Bitte trage zuerst deinen Anthropic API-Schlüssel in den <strong>Einstellungen</strong> ein.</p>
+      <button class="btn" style="width:100%" onclick="switchNav('settings')">→ Einstellungen öffnen</button>
+    </div>`;
+}
+
+// ─────────────────────────────────────────
+// LOAD NEWS
+// ─────────────────────────────────────────
+async function loadNews() {
+  if (!apiKey) { showNoKey(); return; }
+
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+
+  document.getElementById('newsContainer').innerHTML = `
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <div class="loading-label">Aktuelle Nachrichten werden geladen…</div>
+      <div class="loading-steps">
+        <div class="lstep" style="animation-delay:0.4s">🌐 RSS-Feeds werden abgerufen…</div>
+        <div class="lstep" style="animation-delay:1.0s">🤖 Artikel werden übersetzt…</div>
+        <div class="lstep" style="animation-delay:1.6s">📋 Zusammenfassungen werden erstellt…</div>
+      </div>
+    </div>`;
+
+  try {
+    allArticles = await fetchNews();
+    renderNews(currentTab);
+  } catch(e) {
+    document.getElementById('newsContainer').innerHTML = `
+      <div class="error-card" style="margin-top:16px">
+        <strong>⚠️ Fehler beim Laden</strong>
+        ${e.message || 'Unbekannter Fehler. Bitte erneut versuchen.'}
+        <br><br>
+        <button class="btn" onclick="loadNews()">Erneut versuchen</button>
+      </div>`;
+  } finally {
+    btn.classList.remove('spinning');
+  }
+}
+
+// ─────────────────────────────────────────
+// FETCH — Claude ruft RSS-Feeds via Web-Search ab
+// ─────────────────────────────────────────
+async function fetchNews() {
+  const today = new Date().toLocaleDateString('de-DE', { day:'numeric', month:'long', year:'numeric' });
+
+  const prompt = `Heute ist ${today}.
+
+Bitte suche nach den aktuellen Nachrichten von heute von diesen Quellen:
+- BBC News Europe (bbc.com/news/world/europe) 
+- The Guardian Europe (theguardian.com/europe)
+- Sky News Politics (news.sky.com/politics)
+
+Erstelle daraus 6 Artikel auf Deutsch:
+- 4 x Kategorie "politik" — bevorzuge Artikel mit Deutschlandbezug
+- 2 x Kategorie "wirtschaft" — wirtschaftliche Themen
+
+Alle Titel und Texte vollständig auf Deutsch. Antworte NUR mit JSON, keine Erklärungen:
+[
+{"id":1,"category":"politik","source":"BBC Europe","sourceFlag":"🇬🇧","sourceUrl":"https://bbc.com/news/world/europe","isTranslated":true,"title":"TITEL","summary":"EIN SATZ","body":"ZWEI SAETZE","time":"vor X Std."},
+{"id":2,"category":"politik","source":"The Guardian","sourceFlag":"🇬🇧","sourceUrl":"https://theguardian.com/europe","isTranslated":true,"title":"TITEL","summary":"EIN SATZ","body":"ZWEI SAETZE","time":"vor X Std."},
+{"id":3,"category":"politik","source":"Sky News","sourceFlag":"🇬🇧","sourceUrl":"https://news.sky.com/politics","isTranslated":true,"title":"TITEL","summary":"EIN SATZ","body":"ZWEI SAETZE","time":"vor X Std."},
+{"id":4,"category":"politik","source":"BBC Europe","sourceFlag":"🇬🇧","sourceUrl":"https://bbc.com/news/world/europe","isTranslated":true,"title":"TITEL","summary":"EIN SATZ","body":"ZWEI SAETZE","time":"vor X Std."},
+{"id":5,"category":"wirtschaft","source":"The Guardian","sourceFlag":"🇬🇧","sourceUrl":"https://theguardian.com/europe","isTranslated":true,"title":"TITEL","summary":"EIN SATZ","body":"ZWEI SAETZE","time":"vor X Std."},
+{"id":6,"category":"wirtschaft","source":"BBC Europe","sourceFlag":"🇬🇧","sourceUrl":"https://bbc.com/news/world/europe","isTranslated":true,"title":"TITEL","summary":"EIN SATZ","body":"ZWEI SAETZE","time":"vor X Std."}
+]`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API Fehler ${res.status}`);
+  }
+
+  const data = await res.json();
+  const fullText = (data.content || [])
+    .filter(b => b.type === 'text')
+    .map(b => b.text)
+    .join('\n');
+
+  const clean = fullText.replace(/```json|```/g, '').trim();
+  const start = clean.indexOf('[');
+  const end   = clean.lastIndexOf(']');
+  if (start === -1 || end === -1) throw new Error('Keine Artikel erhalten. Bitte erneut versuchen.');
+  return JSON.parse(clean.slice(start, end + 1));
+}
+
+// ─────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────
+const catLabel = { politik: 'Politik & International', wirtschaft: 'Wirtschaft' };
+
+function renderNews(tab) {
+  const container = document.getElementById('newsContainer');
+  const list = tab === 'alle' ? allArticles : allArticles.filter(a => a.category === tab);
+
+  if (!list.length) {
+    container.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--muted)">Keine Artikel gefunden.</div>`;
+    return;
+  }
+
+  const groups = {};
+  list.forEach(a => { (groups[a.category] = groups[a.category] || []).push(a); });
+
+  let html = '';
+  for (const [cat, items] of Object.entries(groups)) {
+    html += `<div class="section-label">${catLabel[cat] || cat}</div>`;
+    items.forEach(a => { html += articleCard(a); });
+  }
+  container.innerHTML = html;
+}
+
+function articleCard(a) {
+  return `
+  <div class="card ${a.category}" onclick="openArticle(${a.id})">
+    <div class="card-meta">
+      <span class="cat-pill">${catLabel[a.category] || a.category}</span>
+      <span class="source-info">${a.sourceFlag} ${a.source}</span>
+      <span class="card-time">${a.time}</span>
+    </div>
+    <div class="card-title">${a.title}</div>
+    <div class="card-summary">${a.summary}</div>
+    <div class="card-footer">
+      <span class="read-more">Mehr lesen →</span>
+      <span class="translated-pill">🌐 Übersetzt</span>
+    </div>
+  </div>`;
+}
+
+// ─────────────────────────────────────────
+// ARTICLE DETAIL
+// ─────────────────────────────────────────
+function openArticle(id) {
+  const a = allArticles.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('oSource').textContent = `${a.sourceFlag} ${a.source}`;
+  document.getElementById('oCat').textContent = catLabel[a.category] || a.category;
+  document.getElementById('oCat').style.color = `var(--${a.category})`;
+  document.getElementById('oTitle').textContent = a.title;
+  document.getElementById('oMeta').innerHTML = `<span>${a.time}</span><span class="translated-pill">🌐 Aus dem Englischen übersetzt</span>`;
+  document.getElementById('oBody').innerHTML = `<p>${a.body}</p><p>${a.summary}</p>`;
+  document.getElementById('oLink').href = a.sourceUrl;
+  document.getElementById('articleOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeArticle() {
+  document.getElementById('articleOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ─────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (allArticles.length) renderNews(tab);
+}
+
+function switchNav(section) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
+  document.getElementById(`panel-${section}`).classList.add('active');
+  document.getElementById(`nav-${section}`).classList.add('active');
+}
+</script>
+</body>
+</html>
